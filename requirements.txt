@@ -4,4 +4,4 @@ requests
 pandas
 numpy
 boto3
-dotenv
+python-dotenv
