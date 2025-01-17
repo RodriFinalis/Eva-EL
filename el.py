@@ -11,11 +11,8 @@ from utils.data import prepare_consolidated_data
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# Título de la aplicación
-st.title("EL Form AI 🤖")
-
 # Subir un archivo PDF
-uploaded_file = st.file_uploader("Carga un archivo PDF", type=["pdf"])
+uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
 if uploaded_file:
     # Guardar el archivo en el directorio temporal
@@ -23,7 +20,7 @@ if uploaded_file:
     with open(file_path, "wb") as f:
         f.write(uploaded_file.read())
 
-    st.write(f"Archivo cargado: {uploaded_file.name}")
+    st.write(f"EL Loaded: {uploaded_file.name}")
 
     # Inicializar barra de progreso
     progress_bar = st.progress(0)
@@ -53,7 +50,7 @@ if uploaded_file:
         logs = st.session_state["logs"]
 
     # Crear un formulario editable para los datos consolidados
-    st.write("Datos consolidados (editar si es necesario):")
+    st.write("Data (Edit if necessary):")
 
     updated_data = {}
 
@@ -65,9 +62,9 @@ if uploaded_file:
             updated_data[key] = st.text_input(key, value=str(value) if value else "Not specified")
         
         # Botón para guardar el formulario
-        submit_button = st.form_submit_button(label="Guardar cambios")
+        submit_button = st.form_submit_button(label="Save Data")
 
     # Si se presiona el botón, enviar los datos a Airtable
     if submit_button:
         create_airtable_record(updated_data, logs="; ".join(logs))
-        st.toast("Datos enviados exitosamente a Airtable 🥳", icon="✅")
+        st.toast("Successfully Saved Data🥳", icon="✅")
