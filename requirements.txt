@@ -3,3 +3,4 @@ pymupdf
 requests
 pandas
 numpy
+boto3
