@@ -23,7 +23,7 @@ def procesar_pdf(pdf_path):
         print(f"Error procesando el archivo PDF {pdf_path}: {e}")
     return texto_extraido
 
-def crear_chunks(texto, max_tokens=31000):
+def crear_chunks(texto, max_tokens=32000):
     words = texto.split()
     chunks, current_chunk = [], []
     current_length = 0
