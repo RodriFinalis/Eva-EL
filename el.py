@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from time import sleep
+import shutil
 from datetime import datetime
 from utils.pdf import leer_pdfs, crear_chunks
 from utils.gpt import process_chunks, consolidate_with_gpt
@@ -12,10 +12,22 @@ from utils.data import prepare_consolidated_data
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+# Función para limpiar la memoria y directorios temporales
+def limpiar_memoria_y_directorio():
+    # Limpiar variables de sesión
+    st.session_state.clear()
+    # Eliminar archivos del directorio temporal
+    if os.path.exists(UPLOAD_FOLDER):
+        shutil.rmtree(UPLOAD_FOLDER)
+        os.makedirs(UPLOAD_FOLDER)
+
 # Subir un archivo PDF
 uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
 if uploaded_file:
+    # Limpiar todo antes de procesar el nuevo archivo
+    limpiar_memoria_y_directorio()
+
     # Guardar el archivo en el directorio temporal
     file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
     with open(file_path, "wb") as f:
@@ -26,29 +38,25 @@ if uploaded_file:
     # Inicializar barra de progreso
     progress_bar = st.progress(0)
 
-    # Procesar el archivo si no hay datos consolidados previos
-    if "consolidated_data" not in st.session_state:
-        progress_bar.progress(10)  # Carga del archivo
-        textos_pdfs = leer_pdfs(UPLOAD_FOLDER)
+    # Procesar el archivo
+    progress_bar.progress(10)  # Carga del archivo
+    textos_pdfs = leer_pdfs(UPLOAD_FOLDER)
 
-        progress_bar.progress(30)  # Extracción de texto
-        chunks_por_pdf = {filename: crear_chunks(texto) for filename, texto in textos_pdfs.items()}
+    progress_bar.progress(30)  # Extracción de texto
+    chunks_por_pdf = {filename: crear_chunks(texto) for filename, texto in textos_pdfs.items()}
 
-        progress_bar.progress(50)  # Creación de chunks
-        resultados_por_pdf, logs = process_chunks(chunks_por_pdf)
+    progress_bar.progress(50)  # Creación de chunks
+    resultados_por_pdf, logs = process_chunks(chunks_por_pdf)
 
-        progress_bar.progress(70)  # Procesamiento con GPT
-        prepared_data = prepare_consolidated_data(resultados_por_pdf)
-        consolidated_data = consolidate_with_gpt(prepared_data)
+    progress_bar.progress(70)  # Procesamiento con GPT
+    prepared_data = prepare_consolidated_data(resultados_por_pdf)
+    consolidated_data = consolidate_with_gpt(prepared_data)
 
-        progress_bar.progress(90)  # Consolidación de datos
-        st.session_state["consolidated_data"] = consolidated_data
-        st.session_state["logs"] = logs
+    progress_bar.progress(90)  # Consolidación de datos
+    st.session_state["consolidated_data"] = consolidated_data
+    st.session_state["logs"] = logs
 
-        progress_bar.progress(100)  # Finalización
-    else:
-        consolidated_data = st.session_state["consolidated_data"]
-        logs = st.session_state["logs"]
+    progress_bar.progress(100)  # Finalización
 
     # Crear un formulario editable para los datos consolidados
     st.write("Data (Edit if necessary):")
@@ -77,10 +85,7 @@ if uploaded_file:
         st.toast("Successfully Saved Data🥳", icon="✅")
 
         # Limpiar toda la información de la sesión después de guardar los datos
-        st.session_state.clear()
-
-        # Mensaje final de limpieza
-        st.toast("Session data cleared for confidentiality.", icon="🔒")
+        limpiar_memoria_y_directorio()
 
         # Parar la ejecución después de enviar la información
         st.stop()
