@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from time import sleep
 from datetime import datetime
 from utils.pdf import leer_pdfs, crear_chunks
 from utils.gpt import process_chunks, consolidate_with_gpt
@@ -11,46 +12,29 @@ from utils.data import prepare_consolidated_data
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# Función para limpiar los archivos creados
-def limpiar_archivos_subidos():
-    for file in os.listdir(UPLOAD_FOLDER):
-        file_path = os.path.join(UPLOAD_FOLDER, file)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)  # Eliminar archivo
-        except Exception as e:
-            print(f"Error al intentar eliminar {file_path}: {e}")
-
-# Inicializar variables de estado
-if "saved" not in st.session_state:
-    st.session_state["saved"] = False  # Indica si los datos ya se han guardado
-if "processing" not in st.session_state:
-    st.session_state["processing"] = False  # Indica si se está procesando un archivo
-if "consolidated_data" not in st.session_state:
-    st.session_state["consolidated_data"] = None
-if "logs" not in st.session_state:
-    st.session_state["logs"] = None
-
 # Subir un archivo PDF
 uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
 if uploaded_file:
-    if not st.session_state["processing"] and not st.session_state["saved"]:
-        # Limpiar archivos previos
-        limpiar_archivos_subidos()
+    # Limpiar `st.session_state` si se carga un nuevo archivo
+    if "current_file" in st.session_state and st.session_state["current_file"] != uploaded_file.name:
+        st.session_state.clear()
 
-        # Guardar el archivo en el directorio temporal
-        file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.read())
+    # Guardar el nombre del archivo en `st.session_state` para comparar en el futuro
+    st.session_state["current_file"] = uploaded_file.name
 
-        st.write(f"EL Loaded: {uploaded_file.name}")
+    # Guardar el archivo en el directorio temporal
+    file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.read())
 
-        # Inicializar barra de progreso
-        progress_bar = st.progress(0)
-        st.session_state["processing"] = True  # Activar el estado de procesamiento
+    st.write(f"EL Loaded: {uploaded_file.name}")
 
-        # Procesar el archivo
+    # Inicializar barra de progreso
+    progress_bar = st.progress(0)
+
+    # Procesar el archivo si no hay datos consolidados previos
+    if "consolidated_data" not in st.session_state:
         progress_bar.progress(10)  # Carga del archivo
         textos_pdfs = leer_pdfs(UPLOAD_FOLDER)
 
@@ -69,17 +53,18 @@ if uploaded_file:
         st.session_state["logs"] = logs
 
         progress_bar.progress(100)  # Finalización
-        st.session_state["processing"] = False  # Desactivar el estado de procesamiento
+    else:
+        consolidated_data = st.session_state["consolidated_data"]
+        logs = st.session_state["logs"]
 
-# Mostrar los datos solo si están disponibles y no se han guardado
-if st.session_state["consolidated_data"] and not st.session_state["saved"]:
+    # Crear un formulario editable para los datos consolidados
     st.write("Data (Edit if necessary):")
 
     updated_data = {}
 
     # Generar el formulario dinámicamente (excluir Summary)
     with st.form(key="edit_form"):
-        for key, value in st.session_state["consolidated_data"].items():
+        for key, value in consolidated_data.items():
             if key != "Summary":  # Excluir el campo Summary del formulario
                 if isinstance(value, list):
                     value = ", ".join(value)  # Convertir listas a cadenas para edición
@@ -88,24 +73,12 @@ if st.session_state["consolidated_data"] and not st.session_state["saved"]:
         # Botón para guardar el formulario
         submit_button = st.form_submit_button(label="Save Data")
 
-    # Si se presiona el botón, enviar los datos a Airtable y limpiar los archivos
+    # Si se presiona el botón, enviar los datos a Airtable
     if submit_button:
         # Agregar el campo Summary al payload sin modificarlo
-        if "Summary" in st.session_state["consolidated_data"]:
-            updated_data["Summary"] = st.session_state["consolidated_data"]["Summary"]
+        if "Summary" in consolidated_data:
+            updated_data["Summary"] = consolidated_data["Summary"]
 
         # Crear registro en Airtable
-        create_airtable_record(updated_data, logs="; ".join(st.session_state["logs"]))
+        create_airtable_record(updated_data, logs="; ".join(logs))
         st.toast("Successfully Saved Data🥳", icon="✅")
-
-        # Limpiar los archivos creados
-        limpiar_archivos_subidos()
-
-        # Actualizar el estado de guardado
-        st.session_state["saved"] = True
-        st.session_state["consolidated_data"] = None
-        st.session_state["logs"] = None
-
-# Manejar estado de guardado
-if st.session_state["saved"]:
-    st.success("Data has been saved. You may now upload a new file.")
