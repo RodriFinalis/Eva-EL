@@ -16,6 +16,13 @@ if not os.path.exists(UPLOAD_FOLDER):
 uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
 if uploaded_file:
+    # Limpiar `st.session_state` si se carga un nuevo archivo
+    if "current_file" in st.session_state and st.session_state["current_file"] != uploaded_file.name:
+        st.session_state.clear()
+
+    # Guardar el nombre del archivo en `st.session_state` para comparar en el futuro
+    st.session_state["current_file"] = uploaded_file.name
+
     # Guardar el archivo en el directorio temporal
     file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
     with open(file_path, "wb") as f:
