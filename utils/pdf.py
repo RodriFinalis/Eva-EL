@@ -1,5 +1,5 @@
 import os
-import fitz  # PyMuPDF
+import fitz  # PyMuPDF r
 
 def leer_pdfs(upload_folder):
     textos_pdfs = {}
