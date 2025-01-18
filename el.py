@@ -21,9 +21,11 @@ def limpiar_archivos_subidos():
         except Exception as e:
             print(f"Error al intentar eliminar {file_path}: {e}")
 
-# Inicializar variables de estado en la sesión
+# Inicializar variables de estado
 if "saved" not in st.session_state:
     st.session_state["saved"] = False  # Indica si los datos ya se han guardado
+if "processing" not in st.session_state:
+    st.session_state["processing"] = False  # Indica si se está procesando un archivo
 if "consolidated_data" not in st.session_state:
     st.session_state["consolidated_data"] = None
 if "logs" not in st.session_state:
@@ -32,39 +34,42 @@ if "logs" not in st.session_state:
 # Subir un archivo PDF
 uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
-if uploaded_file and not st.session_state["saved"]:
-    # Limpiar archivos previos
-    limpiar_archivos_subidos()
+if uploaded_file:
+    if not st.session_state["processing"] and not st.session_state["saved"]:
+        # Limpiar archivos previos
+        limpiar_archivos_subidos()
 
-    # Guardar el archivo en el directorio temporal
-    file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.read())
+        # Guardar el archivo en el directorio temporal
+        file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.read())
 
-    st.write(f"EL Loaded: {uploaded_file.name}")
+        st.write(f"EL Loaded: {uploaded_file.name}")
 
-    # Inicializar barra de progreso
-    progress_bar = st.progress(0)
+        # Inicializar barra de progreso
+        progress_bar = st.progress(0)
+        st.session_state["processing"] = True  # Activar el estado de procesamiento
 
-    # Procesar el archivo
-    progress_bar.progress(10)  # Carga del archivo
-    textos_pdfs = leer_pdfs(UPLOAD_FOLDER)
+        # Procesar el archivo
+        progress_bar.progress(10)  # Carga del archivo
+        textos_pdfs = leer_pdfs(UPLOAD_FOLDER)
 
-    progress_bar.progress(30)  # Extracción de texto
-    chunks_por_pdf = {filename: crear_chunks(texto) for filename, texto in textos_pdfs.items()}
+        progress_bar.progress(30)  # Extracción de texto
+        chunks_por_pdf = {filename: crear_chunks(texto) for filename, texto in textos_pdfs.items()}
 
-    progress_bar.progress(50)  # Creación de chunks
-    resultados_por_pdf, logs = process_chunks(chunks_por_pdf)
+        progress_bar.progress(50)  # Creación de chunks
+        resultados_por_pdf, logs = process_chunks(chunks_por_pdf)
 
-    progress_bar.progress(70)  # Procesamiento con GPT
-    prepared_data = prepare_consolidated_data(resultados_por_pdf)
-    consolidated_data = consolidate_with_gpt(prepared_data)
+        progress_bar.progress(70)  # Procesamiento con GPT
+        prepared_data = prepare_consolidated_data(resultados_por_pdf)
+        consolidated_data = consolidate_with_gpt(prepared_data)
 
-    progress_bar.progress(90)  # Consolidación de datos
-    st.session_state["consolidated_data"] = consolidated_data
-    st.session_state["logs"] = logs
+        progress_bar.progress(90)  # Consolidación de datos
+        st.session_state["consolidated_data"] = consolidated_data
+        st.session_state["logs"] = logs
 
-    progress_bar.progress(100)  # Finalización
+        progress_bar.progress(100)  # Finalización
+        st.session_state["processing"] = False  # Desactivar el estado de procesamiento
 
 # Mostrar los datos solo si están disponibles y no se han guardado
 if st.session_state["consolidated_data"] and not st.session_state["saved"]:
@@ -98,10 +103,9 @@ if st.session_state["consolidated_data"] and not st.session_state["saved"]:
 
         # Actualizar el estado de guardado
         st.session_state["saved"] = True
-
-        # Mostrar mensaje final
-        st.success("Data has been saved and session cleared. You may now upload a new file.")
+        st.session_state["consolidated_data"] = None
+        st.session_state["logs"] = None
 
 # Manejar estado de guardado
 if st.session_state["saved"]:
-    st.info("Data has already been saved. To process a new file, please upload it.")
+    st.success("Data has been saved. You may now upload a new file.")
