@@ -59,3 +59,21 @@ def create_payload(consolidated_data, logs=""):
         payload["fields"][creation_date_field] = current_datetime
 
     return payload
+
+def create_airtable_record(consolidated_data, logs=""):
+    """
+    Crea una nueva fila en Airtable con los datos proporcionados.
+    """
+    # Construir el payload
+    payload = create_payload(consolidated_data, logs)
+
+    # Hacer la solicitud POST a Airtable
+    response = requests.post(AIRTABLE_URL, headers=AIRTABLE_HEADERS, json=payload)
+
+    if response.status_code == 200:
+        print("Fila creada exitosamente en Airtable.")
+        return response.json()
+    else:
+        error_message = f"Error al crear la fila en Airtable: {response.status_code} - {response.text}"
+        print(error_message)
+        raise Exception(error_message)
