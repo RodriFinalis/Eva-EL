@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from time import sleep
+from datetime import datetime
 from utils.pdf import leer_pdfs, crear_chunks
 from utils.gpt import process_chunks, consolidate_with_gpt
 from utils.airtable import create_airtable_record
@@ -57,6 +58,10 @@ if uploaded_file:
     # Generar el formulario dinámicamente
     with st.form(key="edit_form"):
         for key, value in consolidated_data.items():
+            # Ocultar el campo "Summary" del formulario
+            if key == "Summary":
+                continue
+
             if isinstance(value, list):
                 value = ", ".join(value)  # Convertir listas a cadenas para edición
             updated_data[key] = st.text_input(key, value=str(value) if value else "Not specified")
@@ -66,5 +71,9 @@ if uploaded_file:
 
     # Si se presiona el botón, enviar los datos a Airtable
     if submit_button:
+        # Agregar la fecha de creación en formato ISO 8601
+        current_date = datetime.utcnow().isoformat()
+        updated_data["Creation Date"] = current_date
+
         create_airtable_record(updated_data, logs="; ".join(logs))
         st.toast("Successfully Saved Data🥳", icon="✅")

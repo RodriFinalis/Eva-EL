@@ -1,3 +1,4 @@
+from datetime import datetime
 import requests
 from utils.config import AIRTABLE_URL, AIRTABLE_HEADERS
 
@@ -24,7 +25,8 @@ field_mapping = {
     "Tail Provision conditions": "fldyg3gT4Ks0gz1A5",
     "Tail Provision time": "fld9H4QjF8OOwy8uO",
     "Summary": "fldaZrgq6erRo6Jpd",
-    "Logs": "fld2YlOwxSu8Lftac"  # Campo para mantener el historial de procesamiento
+    "Logs": "fld2YlOwxSu8Lftac",  # Campo para mantener el historial de procesamiento
+    "Creation Date": "fldluH5pMmKAypF53"  # Campo de fecha de creación
 }
 
 def create_payload(consolidated_data, logs=""):
@@ -49,6 +51,12 @@ def create_payload(consolidated_data, logs=""):
         logs_field = field_mapping.get("Logs")
         if logs_field:
             payload["fields"][logs_field] = logs
+
+    # Agregar la fecha de creación (ISO 8601) al payload
+    current_date = datetime.utcnow().strftime("%Y-%m-%d")  # Formato: YYYY-MM-DD
+    creation_date_field = field_mapping.get("Creation Date")
+    if creation_date_field:
+        payload["fields"][creation_date_field] = current_date
 
     return payload
 

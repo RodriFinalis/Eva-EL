@@ -30,7 +30,7 @@ def consultar_gpt(text):
     19. "Jurisdiction (Geographically)": Extract the geographical jurisdiction mentioned in the document.
     20. "Tail Provision conditions": Extract the conditions for the tail provision, if mentioned.
     21. "Tail Provision time": Specify the time period for the tail provision, if explicitly mentioned.
-    22. "Summary": Provide a short summary of the Engagement Letter, summarizing the key points in 3-4 sentences.
+    22. "Summary": Provide a short summary of the Engagement Letter, summarizing the Engagement Letter in 4-5 sentences.
 
     The response must be formatted as follows:
 
