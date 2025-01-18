@@ -21,10 +21,18 @@ def limpiar_archivos_subidos():
         except Exception as e:
             print(f"Error al intentar eliminar {file_path}: {e}")
 
+# Inicializar variables de estado en la sesión
+if "saved" not in st.session_state:
+    st.session_state["saved"] = False  # Indica si los datos ya se han guardado
+if "consolidated_data" not in st.session_state:
+    st.session_state["consolidated_data"] = None
+if "logs" not in st.session_state:
+    st.session_state["logs"] = None
+
 # Subir un archivo PDF
 uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
-if uploaded_file:
+if uploaded_file and not st.session_state["saved"]:
     # Limpiar archivos previos
     limpiar_archivos_subidos()
 
@@ -58,14 +66,15 @@ if uploaded_file:
 
     progress_bar.progress(100)  # Finalización
 
-    # Crear un formulario editable para los datos consolidados
+# Mostrar los datos solo si están disponibles y no se han guardado
+if st.session_state["consolidated_data"] and not st.session_state["saved"]:
     st.write("Data (Edit if necessary):")
 
     updated_data = {}
 
     # Generar el formulario dinámicamente (excluir Summary)
     with st.form(key="edit_form"):
-        for key, value in consolidated_data.items():
+        for key, value in st.session_state["consolidated_data"].items():
             if key != "Summary":  # Excluir el campo Summary del formulario
                 if isinstance(value, list):
                     value = ", ".join(value)  # Convertir listas a cadenas para edición
@@ -77,18 +86,22 @@ if uploaded_file:
     # Si se presiona el botón, enviar los datos a Airtable y limpiar los archivos
     if submit_button:
         # Agregar el campo Summary al payload sin modificarlo
-        if "Summary" in consolidated_data:
-            updated_data["Summary"] = consolidated_data["Summary"]
+        if "Summary" in st.session_state["consolidated_data"]:
+            updated_data["Summary"] = st.session_state["consolidated_data"]["Summary"]
 
         # Crear registro en Airtable
-        create_airtable_record(updated_data, logs="; ".join(logs))
+        create_airtable_record(updated_data, logs="; ".join(st.session_state["logs"]))
         st.toast("Successfully Saved Data🥳", icon="✅")
 
         # Limpiar los archivos creados
         limpiar_archivos_subidos()
 
-        # Limpiar el estado de la sesión
-        st.session_state.clear()
+        # Actualizar el estado de guardado
+        st.session_state["saved"] = True
 
-        # Detener ejecución
-        st.stop()
+        # Mostrar mensaje final
+        st.success("Data has been saved and session cleared. You may now upload a new file.")
+
+# Manejar estado de guardado
+if st.session_state["saved"]:
+    st.info("Data has already been saved. To process a new file, please upload it.")
