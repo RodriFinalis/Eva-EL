@@ -16,13 +16,6 @@ if not os.path.exists(UPLOAD_FOLDER):
 uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
 if uploaded_file:
-    # Limpiar `st.session_state` si se carga un nuevo archivo
-    if "current_file" in st.session_state and st.session_state["current_file"] != uploaded_file.name:
-        st.session_state.clear()
-
-    # Guardar el nombre del archivo en `st.session_state` para comparar en el futuro
-    st.session_state["current_file"] = uploaded_file.name
-
     # Guardar el archivo en el directorio temporal
     file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
     with open(file_path, "wb") as f:
@@ -73,7 +66,7 @@ if uploaded_file:
         # Botón para guardar el formulario
         submit_button = st.form_submit_button(label="Save Data")
 
-    # Si se presiona el botón, enviar los datos a Airtable
+    # Si se presiona el botón, enviar los datos a Airtable y limpiar la sesión
     if submit_button:
         # Agregar el campo Summary al payload sin modificarlo
         if "Summary" in consolidated_data:
@@ -82,3 +75,9 @@ if uploaded_file:
         # Crear registro en Airtable
         create_airtable_record(updated_data, logs="; ".join(logs))
         st.toast("Successfully Saved Data🥳", icon="✅")
+
+        # Limpiar toda la información de la sesión
+        st.session_state.clear()
+
+        # Mensaje final de limpieza
+        st.toast("Session data cleared for confidentiality.", icon="🔒")
