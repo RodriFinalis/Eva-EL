@@ -82,3 +82,8 @@ if uploaded_file:
         # Crear registro en Airtable
         create_airtable_record(updated_data, logs="; ".join(logs))
         st.toast("Successfully Saved Data🥳", icon="✅")
+
+        # Eliminar el archivo PDF después de guardar los datos
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            st.write(f"The file '{uploaded_file.name}' has been deleted.")
