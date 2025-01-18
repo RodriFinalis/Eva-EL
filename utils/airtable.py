@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 from utils.config import AIRTABLE_URL, AIRTABLE_HEADERS
 
@@ -52,13 +52,14 @@ def create_payload(consolidated_data, logs=""):
         if logs_field:
             payload["fields"][logs_field] = logs
 
-    # Agregar la fecha y hora actual en formato ISO 8601
-    current_datetime = datetime.utcnow().isoformat() + "Z"  # Incluye el sufijo "Z" para UTC
+    # Agregar la fecha y hora actual en formato ISO 8601 con UTC
+    current_datetime = datetime.now(timezone.utc).isoformat()  # Incluye fecha, hora y sufijo "Z"
     creation_date_field = field_mapping.get("Creation Date")
     if creation_date_field:
         payload["fields"][creation_date_field] = current_datetime
 
     return payload
+
 
 def create_airtable_record(consolidated_data, logs=""):
     """
