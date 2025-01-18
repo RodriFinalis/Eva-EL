@@ -53,7 +53,7 @@ def create_payload(consolidated_data, logs=""):
             payload["fields"][logs_field] = logs
 
     # Agregar la fecha y hora actual en formato ISO 8601
-    current_datetime = datetime.now().isoformat()  # Incluye fecha y hora
+    current_datetime = datetime.utcnow().isoformat() + "Z"  # Incluye el sufijo "Z" para UTC
     creation_date_field = field_mapping.get("Creation Date")
     if creation_date_field:
         payload["fields"][creation_date_field] = current_datetime
