@@ -1,6 +1,5 @@
 import streamlit as st
 import os
-import shutil
 from datetime import datetime
 from utils.pdf import leer_pdfs, crear_chunks
 from utils.gpt import process_chunks, consolidate_with_gpt
@@ -12,21 +11,22 @@ from utils.data import prepare_consolidated_data
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# Función para limpiar la memoria y directorios temporales
-def limpiar_memoria_y_directorio():
-    # Limpiar variables de sesión
-    st.session_state.clear()
-    # Eliminar archivos del directorio temporal
-    if os.path.exists(UPLOAD_FOLDER):
-        shutil.rmtree(UPLOAD_FOLDER)
-        os.makedirs(UPLOAD_FOLDER)
+# Función para limpiar los archivos creados
+def limpiar_archivos_subidos():
+    for file in os.listdir(UPLOAD_FOLDER):
+        file_path = os.path.join(UPLOAD_FOLDER, file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)  # Eliminar archivo
+        except Exception as e:
+            print(f"Error al intentar eliminar {file_path}: {e}")
 
 # Subir un archivo PDF
 uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
 if uploaded_file:
-    # Limpiar todo antes de procesar el nuevo archivo
-    limpiar_memoria_y_directorio()
+    # Limpiar archivos previos
+    limpiar_archivos_subidos()
 
     # Guardar el archivo en el directorio temporal
     file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
@@ -74,7 +74,7 @@ if uploaded_file:
         # Botón para guardar el formulario
         submit_button = st.form_submit_button(label="Save Data")
 
-    # Si se presiona el botón, enviar los datos a Airtable y limpiar la sesión
+    # Si se presiona el botón, enviar los datos a Airtable y limpiar los archivos
     if submit_button:
         # Agregar el campo Summary al payload sin modificarlo
         if "Summary" in consolidated_data:
@@ -84,8 +84,11 @@ if uploaded_file:
         create_airtable_record(updated_data, logs="; ".join(logs))
         st.toast("Successfully Saved Data🥳", icon="✅")
 
-        # Limpiar toda la información de la sesión después de guardar los datos
-        limpiar_memoria_y_directorio()
+        # Limpiar los archivos creados
+        limpiar_archivos_subidos()
 
-        # Parar la ejecución después de enviar la información
+        # Limpiar el estado de la sesión
+        st.session_state.clear()
+
+        # Detener ejecución
         st.stop()
