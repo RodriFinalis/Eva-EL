@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 # Cargar variables de entorno
 load_dotenv()
-AUTHENTICATION_PASSWORD = os.getenv("AUTHENTICATION_PASSWORD")
+AUTHENTICATION_PASSWORD = "TestingApp2025!"
 
 # Configuración inicial
 if not os.path.exists(UPLOAD_FOLDER):
