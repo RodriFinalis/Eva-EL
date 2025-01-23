@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 # Cargar variables de entorno
 load_dotenv()
-AUTHENTICATION_PASSWORD = "TestingApp2025!"
+AUTHENTICATION_PASSWORD = os.getenv("AUTHENTICATION_PASSWORD")
 
 # Configuración inicial
 if not os.path.exists(UPLOAD_FOLDER):
@@ -19,18 +19,24 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 # Autenticación
 def authenticate():
-    st.title("Authentication Required")
-    password = st.text_input("Enter Password", type="password")
-    if password == AUTHENTICATION_PASSWORD:
-        st.success("Authenticated successfully!")
-        return True
-    elif password:
-        st.error("Incorrect password. Please try again.")
-    return False
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
+
+    if not st.session_state["authenticated"]:
+        st.title("Authentication Required")
+        password = st.text_input("Enter Password", type="password")
+        if password == AUTHENTICATION_PASSWORD:
+            st.success("Authenticated successfully!")
+            st.session_state["authenticated"] = True
+        elif password:
+            st.error("Incorrect password. Please try again.")
+
+    return st.session_state["authenticated"]
 
 if authenticate():
     # Subir un archivo PDF
-    uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
+    st.title("Upload an EL File")
+    uploaded_file = st.file_uploader("Drag and drop your EL file here", type=["pdf"])
 
     if uploaded_file:
         # Limpiar `st.session_state` si se carga un nuevo archivo
