@@ -18,12 +18,17 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Autenticación
-st.sidebar.header("Authentication")
-password = st.sidebar.text_input("Password", type="password")
+def authenticate():
+    st.title("Authentication Required")
+    password = st.text_input("Enter Password", type="password")
+    if password == AUTHENTICATION_PASSWORD:
+        st.success("Authenticated successfully!")
+        return True
+    elif password:
+        st.error("Incorrect password. Please try again.")
+    return False
 
-if password == AUTHENTICATION_PASSWORD:
-    st.sidebar.success("Authenticated successfully!")
-
+if authenticate():
     # Subir un archivo PDF
     uploaded_file = st.file_uploader("Upload an EL", type=["pdf"])
 
@@ -99,5 +104,3 @@ if password == AUTHENTICATION_PASSWORD:
             if os.path.exists(file_path):
                 os.remove(file_path)
                 st.write(f"The file '{uploaded_file.name}' has been deleted.")
-else:
-    st.sidebar.warning("Please enter the correct password to access the application.")
